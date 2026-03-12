@@ -1,0 +1,15 @@
+# Large runtime data
+ext4.vhdx
+
+# Local/private config (use _internal/config.example.bat as template)
+_internal/config.bat
+_internal/config.before-rename.bat
+
+# Generated registry/cache artifacts
+_internal/wsl-active.reg
+_internal/wslname.tmp
+
+# Backup and restore outputs
+backup/
+restored/
+*.tar
