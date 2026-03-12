@@ -76,14 +76,8 @@ if %fail%==0 (
 )
 
 :IsDistroRegistered
-  setlocal EnableDelayedExpansion
+  setlocal
   set "target=%~1"
-  set "found="
-  for /f "usebackq delims=" %%D in (`wsl.exe -l -q 2^>nul`) do (
-    if /I "%%D"=="!target!" set "found=1"
-  )
-  if defined found (
-    endlocal & exit /b 0
-  ) else (
-    endlocal & exit /b 1
-  )
+  powershell -NoProfile -Command "$target=$env:target; $items=Get-ChildItem -LiteralPath 'Registry::HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss' -ErrorAction SilentlyContinue; $match=$items | Where-Object { try { (Get-ItemProperty -LiteralPath $_.PSPath -ErrorAction Stop).DistributionName -eq $target } catch { $false } } | Select-Object -First 1; if ($match) { exit 0 } else { exit 1 }"
+  set "rc=%ERRORLEVEL%"
+  endlocal & exit /b %rc%

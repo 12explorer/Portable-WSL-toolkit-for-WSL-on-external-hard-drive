@@ -65,18 +65,33 @@ if not exist "%CONFIG_FILE%" (
 )
 
 copy /y "%CONFIG_FILE%" "%CONFIG_BACKUP%" >nul
-powershell -NoProfile -Command "^$p='%CONFIG_FILE%'; ^$n='%NEW_DISTRO%'; ^$c=Get-Content -LiteralPath ^$p -Raw; ^$c=[regex]::Replace(^$c,'(?m)^set "WSL_DISTRO=.*"$','set "WSL_DISTRO=' + ^$n + '"'); Set-Content -LiteralPath ^$p -Value ^$c -Encoding ASCII"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOTDIR%\_internal\scripts\update-config.ps1" -ConfigFile "%CONFIG_FILE%" -SettingName "WSL_DISTRO" -SettingValue "%NEW_DISTRO%"
 if not %ERRORLEVEL%==0 (
   echo [%batfilenam%] Error: Failed to update _internal\config.bat
   exit /b %ERRORLEVEL%
 )
 
-call "%ROOTDIR%\_internal\scripts\register.bat" %NEW_DISTRO% %WSL_USER%
+if defined WSL_USER (
+  call "%ROOTDIR%\_internal\scripts\register.bat" %NEW_DISTRO% %WSL_USER% --no-launch
+) else (
+  call "%ROOTDIR%\_internal\scripts\register.bat" %NEW_DISTRO% "" --no-launch
+)
 if not %ERRORLEVEL%==0 (
+  set "REGISTER_RC=!ERRORLEVEL!"
   echo [%batfilenam%] Error: Failed to register new distro name.
   if exist "%CONFIG_BACKUP%" copy /y "%CONFIG_BACKUP%" "%CONFIG_FILE%" >nul
   echo [%batfilenam%] _internal\config.bat has been restored from backup.
-  exit /b %ERRORLEVEL%
+  if defined WSL_USER (
+    call "%ROOTDIR%\_internal\scripts\register.bat" %OLD_DISTRO% %WSL_USER% --no-launch >nul 2>nul
+  ) else (
+    call "%ROOTDIR%\_internal\scripts\register.bat" %OLD_DISTRO% "" --no-launch >nul 2>nul
+  )
+  if !ERRORLEVEL!==0 (
+    echo [%batfilenam%] Old distro registration has been restored.
+  ) else (
+    echo [%batfilenam%] Warning: Failed to restore old distro registration automatically.
+  )
+  exit /b !REGISTER_RC!
 )
 
 wsl.exe --set-default %NEW_DISTRO% >nul 2>nul
@@ -87,23 +102,17 @@ echo [%batfilenam%] New name: %NEW_DISTRO%
 exit /b 0
 
 :IsDistroRegistered
-  setlocal EnableDelayedExpansion
+  setlocal
   set "target=%~1"
-  set "found="
-  for /f "usebackq delims=" %%D in (`wsl.exe -l -q 2^>nul`) do (
-    if /I "%%D"=="!target!" set "found=1"
-  )
-  if defined found (
-    endlocal & exit /b 0
-  ) else (
-    endlocal & exit /b 1
-  )
+  powershell -NoProfile -Command "$target=$env:target; $items=Get-ChildItem -LiteralPath 'Registry::HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss' -ErrorAction SilentlyContinue; $match=$items | Where-Object { try { (Get-ItemProperty -LiteralPath $_.PSPath -ErrorAction Stop).DistributionName -eq $target } catch { $false } } | Select-Object -First 1; if ($match) { exit 0 } else { exit 1 }"
+  set "rc=%ERRORLEVEL%"
+  endlocal & exit /b %rc%
 
 :DeleteRegistryEntry
   setlocal
   set "target=%~1"
   set "base=%~2"
-  powershell -NoProfile -Command "^$target='%target%'; ^$base='%base%'; ^$items=Get-ChildItem -LiteralPath 'Registry::HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss' -ErrorAction SilentlyContinue; ^$match=^$items ^| Where-Object { try { ^$p=Get-ItemProperty -LiteralPath ^$_.PSPath -ErrorAction Stop; ^$p.DistributionName -eq ^$target -and ^$p.BasePath -eq ^$base } catch { ^$false } } ^| Select-Object -First 1; if (-not ^$match) { exit 1 }; Remove-Item -LiteralPath ^$match.PSPath -Recurse -Force; exit 0"
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOTDIR%\_internal\scripts\remove-lxss-entry.ps1" -DistributionName "%target%" -BasePath "%base%"
   set "rc=%ERRORLEVEL%"
   endlocal & exit /b %rc%
 

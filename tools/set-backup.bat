@@ -22,7 +22,15 @@ if not %ERRORLEVEL%==0 (
 
 if not defined NEW_DIR set /p NEW_DIR=[%batfilenam%] Enter backup directory ^(leave empty to keep current^): 
 
-powershell -NoProfile -Command "^$p='%CONFIG_FILE%'; ^$k='%NEW_KEEP%'; ^$d='%NEW_DIR%'; ^$c=Get-Content -LiteralPath ^$p -Raw; ^$c=[regex]::Replace(^$c,'(?m)^set \"WSL_BACKUP_KEEP=.*\"$','set \"WSL_BACKUP_KEEP=' + ^$k + '\"'); if (^$d) { ^$c=[regex]::Replace(^$c,'(?m)^set \"WSL_BACKUP_DIR=.*\"$','set \"WSL_BACKUP_DIR=' + ^$d.Replace('\\','\\\\') + '\"') }; Set-Content -LiteralPath ^$p -Value ^$c -Encoding ASCII"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOTDIR%\_internal\scripts\update-config.ps1" -ConfigFile "%CONFIG_FILE%" -SettingName "WSL_BACKUP_KEEP" -SettingValue "%NEW_KEEP%"
+if not %ERRORLEVEL%==0 (
+  echo [%batfilenam%] Error: Failed to update backup retention in _internal\config.bat
+  exit /b %ERRORLEVEL%
+)
+
+if defined NEW_DIR (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOTDIR%\_internal\scripts\update-config.ps1" -ConfigFile "%CONFIG_FILE%" -SettingName "WSL_BACKUP_DIR" -SettingValue "%NEW_DIR%"
+)
 if not %ERRORLEVEL%==0 (
   echo [%batfilenam%] Error: Failed to update _internal\config.bat
   exit /b %ERRORLEVEL%

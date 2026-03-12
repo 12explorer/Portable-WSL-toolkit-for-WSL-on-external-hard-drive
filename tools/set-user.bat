@@ -13,7 +13,7 @@ if not defined NEW_USER (
   exit /b 4
 )
 
-powershell -NoProfile -Command "^$p='%CONFIG_FILE%'; ^$n='%NEW_USER%'; ^$c=Get-Content -LiteralPath ^$p -Raw; ^$c=[regex]::Replace(^$c,'(?m)^set \"WSL_USER=.*\"$','set \"WSL_USER=' + ^$n + '\"'); Set-Content -LiteralPath ^$p -Value ^$c -Encoding ASCII"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOTDIR%\_internal\scripts\update-config.ps1" -ConfigFile "%CONFIG_FILE%" -SettingName "WSL_USER" -SettingValue "%NEW_USER%"
 if not %ERRORLEVEL%==0 (
   echo [%batfilenam%] Error: Failed to update _internal\config.bat
   exit /b %ERRORLEVEL%

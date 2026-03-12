@@ -97,17 +97,11 @@ echo [%batfilenam%] Next: run run.bat
 exit /b 0
 
 :IsDistroRegistered
-  setlocal EnableDelayedExpansion
+  setlocal
   set "target=%~1"
-  set "found="
-  for /f "usebackq delims=" %%D in (`wsl.exe -l -q 2^>nul`) do (
-    if /I "%%D"=="!target!" set "found=1"
-  )
-  if defined found (
-    endlocal & exit /b 0
-  ) else (
-    endlocal & exit /b 1
-  )
+  powershell -NoProfile -Command "$target=$env:target; $items=Get-ChildItem -LiteralPath 'Registry::HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss' -ErrorAction SilentlyContinue; $match=$items | Where-Object { try { (Get-ItemProperty -LiteralPath $_.PSPath -ErrorAction Stop).DistributionName -eq $target } catch { $false } } | Select-Object -First 1; if ($match) { exit 0 } else { exit 1 }"
+  set "rc=%ERRORLEVEL%"
+  endlocal & exit /b %rc%
 
 :FindLatestBackup
   setlocal
@@ -115,7 +109,7 @@ exit /b 0
   set "distro=%~2"
   set "latest="
 
-  for /f "usebackq delims=" %%F in (`powershell -NoProfile -Command "^$d='%dir%'; ^$n='%distro%'; if (Test-Path -LiteralPath ^$d) { Get-ChildItem -LiteralPath ^$d -File -Filter (^$n + '_*.tar') ^| Sort-Object LastWriteTime -Descending ^| Select-Object -First 1 ^| ForEach-Object { ^$_.FullName } }"`) do (
+  for /f "usebackq delims=" %%F in (`powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0find-latest-backup.ps1" -Directory "%dir%" -Distro "%distro%"`) do (
     if not defined latest set "latest=%%F"
   )
 

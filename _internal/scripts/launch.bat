@@ -52,7 +52,7 @@ where wt.exe >nul 2>nul
 if %ERRORLEVEL%==0 set "has_wt=1"
 
 if not defined in_wt if defined has_wt (
-  echo [%batfilenam%] Launching WSL in existing Windows Terminal window (new tab).
+  echo [%batfilenam%] Launching WSL in existing Windows Terminal window ^(new tab^).
   wt -w 0 nt --title "WSL - %ThisWslDistributionName%" %wsl_launch_cmd%
   if %ERRORLEVEL%==0 exit /b 0
   echo [%batfilenam%] Warning: wt.exe launch failed, fallback to current console.
@@ -63,17 +63,11 @@ call %wsl_launch_cmd%
 exit /b %ERRORLEVEL%
 
 :IsDistroRegistered
-  setlocal EnableDelayedExpansion
+  setlocal
   set "target=%~1"
-  set "found="
-  for /f "usebackq delims=" %%D in (`wsl.exe -l -q 2^>nul`) do (
-    if /I "%%D"=="!target!" set "found=1"
-  )
-  if defined found (
-    endlocal & exit /b 0
-  ) else (
-    endlocal & exit /b 1
-  )
+  powershell -NoProfile -Command "$target=$env:target; $items=Get-ChildItem -LiteralPath 'Registry::HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss' -ErrorAction SilentlyContinue; $match=$items | Where-Object { try { (Get-ItemProperty -LiteralPath $_.PSPath -ErrorAction Stop).DistributionName -eq $target } catch { $false } } | Select-Object -First 1; if ($match) { exit 0 } else { exit 1 }"
+  set "rc=%ERRORLEVEL%"
+  endlocal & exit /b %rc%
 
 :HasSpaceChar
   setlocal & set "input=%*"

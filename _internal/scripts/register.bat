@@ -9,6 +9,9 @@ set internaldir=%batdir%\_internal
 
 set ThisWslDistributionName=%~1
 set UnixUser=%~2
+set "NO_LAUNCH="
+
+if /I "%~3"=="--no-launch" set "NO_LAUNCH=1"
 
 if not defined ThisWslDistributionName (
   echo. Need a DistributionName as parameter.
@@ -20,8 +23,8 @@ if not defined ThisWslDistributionName (
   exit /b 4
 )
 
-if not "" == "%~3" (
-  call :Echos Error: Only one or two parameter should be given.
+if not "" == "%~3" if not defined NO_LAUNCH (
+  call :Echos Error: Only one or two parameters are supported, plus optional --no-launch.
   exit /b 4
 )
 
@@ -121,6 +124,11 @@ if not %ERRORLEVEL%==0 (
   call :Echos Import registry file fail: %regfile%
   pause
   exit /b 4
+)
+
+if defined NO_LAUNCH (
+  call :Echos Registration completed without launching WSL.
+  exit /b 0
 )
 
 title WSL - %ThisWslDistributionName%
