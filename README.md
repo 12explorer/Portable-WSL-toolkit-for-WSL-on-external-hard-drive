@@ -11,6 +11,29 @@ This project is optimized and evolved from the original WSL portable script idea
 - https://zhuanlan.zhihu.com/p/525955480
 - https://gitee.com/chjfth/dailytools/tree/master/cmd-batch/WSL-green
 
+## Project Positioning
+
+This repository is a practical upgrade of an existing portable WSL script workflow, not a from-scratch WSL framework.
+
+The goal is to make day-to-day cross-host usage more reliable and easier to operate by improving script structure, defaults, and maintenance flows.
+
+## What Is Improved Compared to the Original Script Form
+
+1. Script layering and readability:
+    - top-level scripts for frequent daily actions
+    - maintenance scripts grouped under `tools/`
+    - low-level implementation and generated artifacts grouped under `_internal/`
+2. Operational safety:
+    - explicit stop flow before unplugging
+    - safe backup entrypoint
+    - scripted restore and rename workflows
+3. Configuration management:
+    - local runtime config with template separation
+    - helper scripts for changing user and backup policy
+4. Open-source publishing hygiene:
+    - privacy-safe defaults and ignored generated/private files
+    - README onboarding and troubleshooting guidance
+
 This repository is designed for practical daily use:
 - one-click start
 - one-click safe stop before unplugging
@@ -215,6 +238,12 @@ Recommended mitigations:
 2. avoid unstable USB hubs/cables
 3. disable aggressive USB power saving in Windows
 4. keep frequent backups with `backup-safe.bat`
+
+## Known Boundaries
+
+1. This project cannot fully prevent hardware-level disconnect issues.
+2. If an external drive disconnects during active I/O, WSL may still encounter I/O errors.
+3. The scripts reduce operational mistakes and recovery time, but they are not a replacement for stable hardware and power settings.
 
 ## FAQ
 
