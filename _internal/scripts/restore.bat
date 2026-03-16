@@ -25,6 +25,9 @@ if not defined WSL_USER set "WSL_USER="
 if not defined WSL_BACKUP_DIR set "WSL_BACKUP_DIR=%ROOTDIR%\backup"
 if not defined WSL_RESTORE_DIR set "WSL_RESTORE_DIR=%ROOTDIR%\restored"
 
+call :ResolvePath "%WSL_BACKUP_DIR%" WSL_BACKUP_DIR
+call :ResolvePath "%WSL_RESTORE_DIR%" WSL_RESTORE_DIR
+
 if not defined BACKUP_TAR call :FindLatestBackup "%WSL_BACKUP_DIR%" "%WSL_DISTRO%"
 if defined latest_tar if not defined BACKUP_TAR set "BACKUP_TAR=!latest_tar!"
 
@@ -40,6 +43,7 @@ if not exist "%BACKUP_TAR%" (
 )
 
 if not defined INSTALL_DIR set "INSTALL_DIR=%WSL_RESTORE_DIR%\%WSL_DISTRO%"
+call :ResolvePath "%INSTALL_DIR%" INSTALL_DIR
 
 where wsl.exe >nul 2>nul
 if not %ERRORLEVEL%==0 (
@@ -114,3 +118,22 @@ exit /b 0
   )
 
   endlocal & set "latest_tar=%latest%" & exit /b 0
+
+:ResolvePath
+  setlocal
+  set "p=%~1"
+  if not defined p endlocal & set "%~2=" & exit /b 0
+
+  set "abs="
+  if "%p:~1,1%"==":" (
+    set "abs=%p%"
+  ) else if "%p:~0,2%"=="\\" (
+    set "abs=%p%"
+  ) else (
+    set "abs=%ROOTDIR%\%p%"
+  )
+
+  for %%I in ("%abs%") do set "abs=%%~fI"
+  if "%abs:~-1%"=="\" set "abs=%abs:~0,-1%"
+
+  endlocal & set "%~2=%abs%" & exit /b 0

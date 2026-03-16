@@ -6,6 +6,6 @@ if not defined ROOTDIR (
 
 set "WSL_DISTRO=<YOUR_DISTRO_NAME>"
 set "WSL_USER=<YOUR_LINUX_USER>"
-set "WSL_BACKUP_DIR=%ROOTDIR%\backup"
+set "WSL_BACKUP_DIR=backup"
 set "WSL_BACKUP_KEEP=3"
-set "WSL_RESTORE_DIR=%ROOTDIR%\restored"
+set "WSL_RESTORE_DIR=restored"

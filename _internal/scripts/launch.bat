@@ -4,6 +4,8 @@ setlocal EnableDelayedExpansion
 set "batfilenam=%~nx0"
 set "ThisWslDistributionName=%~1"
 set "UnixUser=%~2"
+for %%I in ("%~dp0..\..") do set "ROOTDIR=%%~fI"
+if "%ROOTDIR:~-1%"=="\" set "ROOTDIR=%ROOTDIR:~0,-1%"
 
 if not defined ThisWslDistributionName (
   echo [%batfilenam%] Need a DistributionName as parameter.
@@ -42,6 +44,22 @@ if not %ERRORLEVEL%==0 (
   exit /b %ERRORLEVEL%
 )
 
+call :GetDistroBasePath "%ThisWslDistributionName%" CURRENT_BASEPATH
+if defined CURRENT_BASEPATH (
+  set "expected=%ROOTDIR%"
+  set "current=%CURRENT_BASEPATH%"
+  if "!expected:~-1!"=="\" set "expected=!expected:~0,-1!"
+  if "!current:~-1!"=="\" set "current=!current:~0,-1!"
+  if /I not "!current!"=="!expected!" (
+    echo [%batfilenam%] Detected moved project path.
+    echo [%batfilenam%] Registry BasePath: !current!
+    echo [%batfilenam%] Current path:      !expected!
+    echo [%batfilenam%] Re-registering distro to update BasePath...
+    call "%~dp0register.bat" %ThisWslDistributionName% %UnixUser% --no-launch
+    if not %ERRORLEVEL%==0 exit /b %ERRORLEVEL%
+  )
+)
+
 set "wsl_launch_cmd=wsl.exe -d %ThisWslDistributionName% %_u_param% --cd ~"
 
 set "in_wt="
@@ -68,6 +86,15 @@ exit /b %ERRORLEVEL%
   powershell -NoProfile -Command "$target=$env:target; $items=Get-ChildItem -LiteralPath 'Registry::HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss' -ErrorAction SilentlyContinue; $match=$items | Where-Object { try { (Get-ItemProperty -LiteralPath $_.PSPath -ErrorAction Stop).DistributionName -eq $target } catch { $false } } | Select-Object -First 1; if ($match) { exit 0 } else { exit 1 }"
   set "rc=%ERRORLEVEL%"
   endlocal & exit /b %rc%
+
+:GetDistroBasePath
+  setlocal
+  set "target=%~1"
+  set "found="
+  for /f "usebackq delims=" %%P in (`powershell -NoProfile -Command "$target=$env:target; $items=Get-ChildItem -LiteralPath 'Registry::HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss' -ErrorAction SilentlyContinue; $match=$items | Where-Object { try { (Get-ItemProperty -LiteralPath $_.PSPath -ErrorAction Stop).DistributionName -eq $target } catch { $false } } | Select-Object -First 1; if ($match) { (Get-ItemProperty -LiteralPath $match.PSPath -ErrorAction SilentlyContinue).BasePath }"`) do (
+    if not defined found set "found=%%P"
+  )
+  endlocal & set "%~2=%found%" & exit /b 0
 
 :HasSpaceChar
   setlocal & set "input=%*"

@@ -18,7 +18,7 @@
 
 "Flags"=dword:00000007
 ; -- Flags: 0x07 means WSL1, 0x0f means WSL2
-"BasePath"="D:\\WSL-Ubuntu-22.04\to-be-modified-by-bat"
+"BasePath"="__BASE_PATH_TO_BE_OVERRIDDEN__"
 "DistributionName"="DistributionName-to-be-modified-by-bat"
 
 ; Override Flags, BasePath and DistributionName below:

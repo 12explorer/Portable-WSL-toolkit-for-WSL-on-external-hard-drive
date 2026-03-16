@@ -20,6 +20,8 @@ if not defined BACKUP_DIR (
   )
 )
 
+call :ResolvePath "%BACKUP_DIR%" BACKUP_DIR
+
 if not defined WSL_BACKUP_KEEP set "WSL_BACKUP_KEEP=5"
 
 if not defined WSL_DISTRO (
@@ -90,3 +92,22 @@ exit /b 0
   powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0prune-backups.ps1" -Directory "%dir%" -Distro "%distro%" -Keep %keep%
   echo [%batfilenam%] Keep latest %keep% backups for %distro%.
   endlocal & exit /b 0
+
+:ResolvePath
+  setlocal
+  set "p=%~1"
+  if not defined p endlocal & set "%~2=" & exit /b 0
+
+  set "abs="
+  if "%p:~1,1%"==":" (
+    set "abs=%p%"
+  ) else if "%p:~0,2%"=="\\" (
+    set "abs=%p%"
+  ) else (
+    set "abs=%ROOTDIR%\%p%"
+  )
+
+  for %%I in ("%abs%") do set "abs=%%~fI"
+  if "%abs:~-1%"=="\" set "abs=%abs:~0,-1%"
+
+  endlocal & set "%~2=%abs%" & exit /b 0
