@@ -78,6 +78,17 @@ if not defined in_wt if defined has_wt (
 
 echo [%batfilenam%] EXEC: %wsl_launch_cmd%
 call %wsl_launch_cmd%
+if %ERRORLEVEL%==0 exit /b 0
+
+set "first_rc=%ERRORLEVEL%"
+echo [%batfilenam%] Warning: First launch failed with code %first_rc%. Trying recovery...
+wsl.exe --shutdown >nul 2>nul
+powershell -NoProfile -Command "Start-Sleep -Seconds 1" >nul 2>nul
+echo [%batfilenam%] EXEC: %wsl_launch_cmd% ^(retry^)
+call %wsl_launch_cmd%
+if %ERRORLEVEL%==0 exit /b 0
+
+echo [%batfilenam%] Error: Launch failed after retry.
 exit /b %ERRORLEVEL%
 
 :IsDistroRegistered
